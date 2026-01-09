@@ -1,0 +1,7 @@
+{
+  "name": "com.example.meeting_notes",
+  "description": "AI-generated meeting notes app for Linux desktop",
+  "version": "1.0.0",
+  "author": "Your Name",
+  "main": "../lib/main.dart"
+}

@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Meeting Notes
+Comment=AI-generated meeting notes app for Linux desktop
+Exec=meeting_notes
+Icon=com.example.meeting_notes
+Terminal=false
+Type=Application
+Categories=Utility;
+MimeType=
