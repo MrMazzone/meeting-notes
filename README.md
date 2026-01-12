@@ -1,6 +1,6 @@
 # Meeting Notes - AI Generated Meeting Summary App
 
-A Flutter desktop app for Linux that records audio from your microphone and Speaker, transcribes it, and generates AI-powered summaries using Anthropic Claude.
+A Flutter desktop app for Linux that records audio from your microphone and speaker, transcribes it, and generates AI-powered summaries using Anthropic Claude.
 
 ## Features
 
