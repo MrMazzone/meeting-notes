@@ -1,10 +1,10 @@
-# Meeting Notes - AI Generated Meeting Notes App
+# Meeting Notes - AI Generated Meeting Summary App
 
-A Flutter desktop app for Linux that records audio from your microphone, transcribes it, and generates AI-powered summaries using Anthropic Claude.
+A Flutter desktop app for Linux that records audio from your microphone and Speaker, transcribes it, and generates AI-powered summaries using Anthropic Claude.
 
 ## Features
 
-- 🎤 Record audio from your microphone
+- 🎤 Record audio from your microphone and speaker
 - 📝 Audio transcription using Anthropic Claude API
 - 🤖 AI-generated meeting summaries using Claude
 - 💾 Automatically saves transcript and summary to text files
@@ -36,6 +36,8 @@ A Flutter desktop app for Linux that records audio from your microphone, transcr
    ```bash
    sudo apt-get install pulseaudio-utils
    ```
+   
+   **Audio Capture:** The app automatically captures both microphone input and system audio (speakers) by creating a combined audio source. This allows transcription of both sides of conversations during meetings, including audio from video calls, system sounds, and microphone input.
 
 4. **Local Transcription Tool** (Required for audio transcription)
    
@@ -62,7 +64,7 @@ A Flutter desktop app for Linux that records audio from your microphone, transcr
    
    The app will automatically detect and use the best available option, preferring faster-whisper for streaming transcription.
 
-5. **Anthropic API Key** (configure via `.env` file):
+5. **Anthropic API Key** (configure via `.env` file when developing locally):
    - Anthropic API key for transcription and summaries: `ANTHROPIC_API_KEY`
 
    Create a `.env` file in the project root:
@@ -109,14 +111,14 @@ A Flutter desktop app for Linux that records audio from your microphone, transcr
    - Finalize the transcript from all chunks
    - Generate a summary using Claude
    - Save both files in organized folders:
-     - `MeetingMinutesRecordings/[timestamp]/meeting_transcript_[timestamp].txt`
-     - `MeetingMinutesRecordings/[timestamp]/meeting_summary_[timestamp].txt`
+     - `MeetingNotesApp/[timestamp]/meeting_transcript_[timestamp].txt`
+     - `MeetingNotesApp/[timestamp]/meeting_summary_[timestamp].txt`
 
 ## File Locations
 
 Transcripts and summaries are saved in organized folders:
 ```
-~/Documents/MeetingMinutesRecordings/
+~/Documents/MeetingNotesApp/
   └── [timestamp]/
       ├── meeting_transcript_[timestamp].txt
       └── meeting_summary_[timestamp].txt
@@ -231,7 +233,6 @@ flutter run -d linux
 
 ## Possible Future Enhancements
 
-- [ ] Support for capturing system audio (speakers)
 - [ ] Multiple meeting templates
 - [ ] Export to different formats (Markdown, PDF)
 - [ ] Integration with calendar apps

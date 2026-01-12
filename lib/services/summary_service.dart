@@ -1,11 +1,10 @@
-import 'dart:io';
 import 'package:http/http.dart' as http;
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'dart:convert';
+import 'config_service.dart';
 
 class SummaryService {
   // Using Anthropic Claude API for summarization
-  // You'll need to set your API key in .env file or environment variable: ANTHROPIC_API_KEY
+  // API key is stored in app configuration (accessible via Settings)
   static const String _baseUrl = 'https://api.anthropic.com/v1/messages';
   
   // Token estimation: roughly 1 token = 4 characters
@@ -70,13 +69,13 @@ class SummaryService {
   
   Future<String> summarizeMeeting(String transcript) async {
     try {
-      // Try to get API key from .env file first, then fall back to environment variable
-      final String? apiKey = dotenv.env['ANTHROPIC_API_KEY'] ?? Platform.environment['ANTHROPIC_API_KEY'];
+      // Get API key from configuration
+      final String? apiKey = await ConfigService.getApiKey();
       
       if (apiKey == null || apiKey.isEmpty) {
         throw Exception(
-          'ANTHROPIC_API_KEY not found. '
-          'Please set it in .env file or as environment variable: export ANTHROPIC_API_KEY=your_api_key'
+          'Anthropic API key not configured. '
+          'Please set your API key in Settings.'
         );
       }
 
@@ -118,13 +117,13 @@ class SummaryService {
     int? totalChunks,
   }) async {
     try {
-      // Get API key
-      final String? apiKey = dotenv.env['ANTHROPIC_API_KEY'] ?? Platform.environment['ANTHROPIC_API_KEY'];
+      // Get API key from configuration
+      final String? apiKey = await ConfigService.getApiKey();
       
       if (apiKey == null || apiKey.isEmpty) {
         throw Exception(
-          'ANTHROPIC_API_KEY not found. '
-          'Please set it in .env file or as environment variable: export ANTHROPIC_API_KEY=your_api_key'
+          'Anthropic API key not configured. '
+          'Please set your API key in Settings.'
         );
       }
       
@@ -243,7 +242,7 @@ $chunk''';
       // If all models failed, throw the last error
       throw lastError ?? Exception('All Claude models unavailable. Please check your API key and account status.');
     } catch (e) {
-      if (e.toString().contains('ANTHROPIC_API_KEY') || 
+      if (e.toString().contains('API key') || 
           e.toString().contains('Context window exceeded')) {
         rethrow;
       }
@@ -254,8 +253,8 @@ $chunk''';
   /// Combine multiple chunk summaries into a final comprehensive summary
   Future<String> _combineSummaries(List<String> chunkSummaries) async {
     try {
-      // Get API key
-      final String? apiKey = dotenv.env['ANTHROPIC_API_KEY'] ?? Platform.environment['ANTHROPIC_API_KEY'];
+      // Get API key from configuration
+      final String? apiKey = await ConfigService.getApiKey();
       
       if (apiKey == null || apiKey.isEmpty) {
         // If no API key, just return concatenated summaries

@@ -37,7 +37,7 @@ function(apply_standard_settings TARGET)
 endfunction()
 
 # Define settings for the Linux runner.
-set(APPLICATION_ID "com.example.meeting_notes")
+set(APPLICATION_ID "net.joemazzone.meetingnotes")
 
 # Define the name of the Flutter-managed application to target. This must match
 # the name of the application as it is registered in the Linux embedder's

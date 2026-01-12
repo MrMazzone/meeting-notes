@@ -33,24 +33,37 @@ class FasterWhisperService {
         throw Exception('Audio chunk not found: $chunkPath');
       }
 
-      // Get the script path relative to project root
+      // Get the script path - try multiple locations
+      String? scriptPath;
+      final currentDir = Directory.current;
+      
+      // Try relative path first
       final scriptFile = File(_scriptPath);
-      if (!await scriptFile.exists()) {
-        // Try absolute path
-        final currentDir = Directory.current;
+      if (await scriptFile.exists()) {
+        scriptPath = scriptFile.path;
+      } else {
+        // Try absolute path from current directory
         final absoluteScriptPath = '${currentDir.path}/$_scriptPath';
         final absoluteScriptFile = File(absoluteScriptPath);
-        if (!await absoluteScriptFile.exists()) {
-          throw Exception(
-            'faster-whisper script not found. Expected at: $_scriptPath or $absoluteScriptPath'
-          );
+        if (await absoluteScriptFile.exists()) {
+          scriptPath = absoluteScriptFile.path;
+        } else {
+          // Try /opt/meeting-notes (where .deb installs)
+          final installedPath = '/opt/meeting-notes/$_scriptPath';
+          final installedFile = File(installedPath);
+          if (await installedFile.exists()) {
+            scriptPath = installedPath;
+          } else {
+            throw Exception(
+              'faster-whisper script not found. Tried:\n'
+              '- $_scriptPath\n'
+              '- $absoluteScriptPath\n'
+              '- $installedPath\n\n'
+              'Please ensure the script is in the correct location.'
+            );
+          }
         }
       }
-
-      // Run faster-whisper transcription script
-      final scriptPath = await scriptFile.exists() 
-          ? scriptFile.path 
-          : '${Directory.current.path}/$_scriptPath';
       
       final result = await Process.run(
         'python3',

@@ -7,7 +7,7 @@ project(runner LANGUAGES CXX)
 set(BINARY_NAME "meeting_notes")
 # The unique GTK application identifier for this application. See:
 # https://wiki.gnome.org/HowDoI/ChooseApplicationID
-set(APPLICATION_ID "com.example.meeting_notes")
+set(APPLICATION_ID "net.joemazzone.meetingnotes")
 
 # Explicitly opt in to modern CMake behaviors to avoid warnings with recent
 # versions of CMake.
@@ -87,6 +87,15 @@ endif()
 install(CODE "
   file(REMOVE_RECURSE \"${BUILD_BUNDLE_DIR}/\")
   " COMPONENT Runtime)
+
+# Install the desktop entry and icon early so they're available during development
+install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/net.joemazzone.meetingnotes.desktop"
+  DESTINATION "${CMAKE_INSTALL_PREFIX}"
+  COMPONENT Runtime)
+
+install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/net.joemazzone.meetingnotes.png"
+  DESTINATION "${CMAKE_INSTALL_PREFIX}"
+  COMPONENT Runtime)
 
 set(INSTALL_BUNDLE_DATA_DIR "${CMAKE_INSTALL_PREFIX}/data")
 set(INSTALL_BUNDLE_LIB_DIR "${CMAKE_INSTALL_PREFIX}/lib")

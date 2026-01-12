@@ -1,9 +1,10 @@
 [Desktop Entry]
 Name=Meeting Notes
 Comment=AI-generated meeting notes app for Linux desktop
-Exec=meeting_notes
+Exec=meeting-notes
 Icon=net.joemazzone.meetingnotes
 Terminal=false
 Type=Application
 Categories=Utility;
 MimeType=
+Path=/opt/meeting-notes

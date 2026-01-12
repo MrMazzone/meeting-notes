@@ -4,6 +4,7 @@
 #ifdef GDK_WINDOWING_X11
 #include <gdk/gdkx.h>
 #endif
+#include <gtk/gtk.h>
 
 #include "flutter/generated_plugin_registrant.h"
 
@@ -25,13 +26,13 @@ static void my_application_activate(GApplication* application) {
   GtkWindow* window =
       GTK_WINDOW(gtk_application_window_new(GTK_APPLICATION(application)));
 
-  // Use a header bar when running in GNOME as this is the common style used
+  // Use a header bar when running in GNOME on X11 as this is the common style used
   // by applications and is the setup most users will be using (e.g. Ubuntu
   // desktop).
   // If running on X and not using GNOME then just use a traditional title bar
   // in case the window manager does more exotic layout, e.g. tiling.
-  // If running on Wayland assume the header bar will work (may need changing
-  // if future cases occur).
+  // On Wayland, don't use custom header bar - let compositor handle decorations
+  // to match system appearance and avoid tall/thick title bars.
   gboolean use_header_bar = TRUE;
 #ifdef GDK_WINDOWING_X11
   GdkScreen* screen = gtk_window_get_screen(window);
@@ -41,18 +42,70 @@ static void my_application_activate(GApplication* application) {
       use_header_bar = FALSE;
     }
   }
+#else
+  // On Wayland, don't use custom header bar - let compositor handle decorations
+  use_header_bar = FALSE;
 #endif
   if (use_header_bar) {
     GtkHeaderBar* header_bar = GTK_HEADER_BAR(gtk_header_bar_new());
     gtk_widget_show(GTK_WIDGET(header_bar));
-    gtk_header_bar_set_title(header_bar, "meeting_notes");
+    gtk_header_bar_set_title(header_bar, "Meeting Notes");
     gtk_header_bar_set_show_close_button(header_bar, TRUE);
     gtk_window_set_titlebar(window, GTK_WIDGET(header_bar));
   } else {
-    gtk_window_set_title(window, "meeting_notes");
+    gtk_window_set_title(window, "Meeting Notes");
   }
 
   gtk_window_set_default_size(window, 1280, 720);
+
+  // Set the window icon - try multiple possible locations
+  gchar* icon_path = nullptr;
+  GdkPixbuf* icon = nullptr;
+  GError* error = nullptr;
+  
+  // Try 1: Relative path from executable location (bundle directory)
+  gchar* exe_path = g_file_read_link("/proc/self/exe", nullptr);
+  if (exe_path != nullptr) {
+    gchar* exe_dir = g_path_get_dirname(exe_path);
+    // Icon should be in the same directory as the executable (bundle root)
+    icon_path = g_build_filename(
+        exe_dir, "net.joemazzone.meetingnotes.png", nullptr);
+    if (g_file_test(icon_path, G_FILE_TEST_EXISTS)) {
+      icon = gdk_pixbuf_new_from_file(icon_path, &error);
+    }
+    g_free(exe_dir);
+    g_free(exe_path);
+  }
+  
+  // Try 2: Relative to current directory (development/source)
+  if (icon == nullptr) {
+    g_free(icon_path);
+    icon_path = g_build_filename(
+        g_get_current_dir(), "linux", "net.joemazzone.meetingnotes.png", nullptr);
+    if (g_file_test(icon_path, G_FILE_TEST_EXISTS)) {
+      icon = gdk_pixbuf_new_from_file(icon_path, &error);
+    }
+  }
+  
+  // Try 3: In current directory
+  if (icon == nullptr) {
+    g_free(icon_path);
+    icon_path = g_build_filename(
+        g_get_current_dir(), "net.joemazzone.meetingnotes.png", nullptr);
+    if (g_file_test(icon_path, G_FILE_TEST_EXISTS)) {
+      icon = gdk_pixbuf_new_from_file(icon_path, &error);
+    }
+  }
+  
+  if (icon != nullptr) {
+    gtk_window_set_icon(window, icon);
+    g_object_unref(icon);
+  } else if (error != nullptr) {
+    g_warning("Failed to load icon from %s: %s", icon_path ? icon_path : "unknown", error->message);
+    g_error_free(error);
+  }
+  
+  g_free(icon_path);
 
   g_autoptr(FlDartProject) project = fl_dart_project_new();
   fl_dart_project_set_dart_entrypoint_arguments(

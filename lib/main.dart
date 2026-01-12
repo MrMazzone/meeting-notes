@@ -1,24 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'dart:io';
 import 'dart:async';
 import 'services/audio_recorder_service.dart';
 import 'services/transcription_service.dart';
 import 'services/summary_service.dart';
+import 'services/config_service.dart';
+import 'widgets/settings_dialog.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
-  // Load .env file
-  try {
-    await dotenv.load(fileName: ".env");
-  } catch (e) {
-    // If .env file doesn't exist, continue - environment variables can still be used
-    print("Warning: .env file not found. Using environment variables instead.");
-  }
-  
   runApp(const MyApp());
 }
 
@@ -30,7 +22,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Meeting Notes',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF5A7BA8)),
         useMaterial3: true,
       ),
       home: const MeetingNotesPage(),
@@ -61,6 +53,72 @@ class _MeetingNotesPageState extends State<MeetingNotesPage> {
 
   final TranscriptionService _transcriptionService = TranscriptionService();
   final SummaryService _summaryService = SummaryService();
+  bool _hasApiKey = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkApiKey();
+  }
+
+  Future<void> _checkApiKey() async {
+    final hasKey = await ConfigService.hasApiKey();
+    setState(() {
+      _hasApiKey = hasKey;
+    });
+    
+    // Show first-run dialog if no API key
+    if (!hasKey && mounted) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _showFirstRunDialog();
+      });
+    }
+  }
+
+  void _showFirstRunDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.info_outline),
+            SizedBox(width: 8),
+            Text('Welcome to Meeting Notes'),
+          ],
+        ),
+        content: const Text(
+          'To generate AI-powered meeting summaries, you need to configure your Anthropic Claude API key.\n\n'
+          'You can set it now or access Settings later from the app.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _openSettings();
+            },
+            child: const Text('Set API Key'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Later'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _openSettings() async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => const SettingsDialog(),
+    );
+    
+    if (result == true) {
+      // API key was saved, refresh status
+      await _checkApiKey();
+    }
+  }
 
   @override
   void dispose() {
@@ -72,6 +130,15 @@ class _MeetingNotesPageState extends State<MeetingNotesPage> {
 
   Future<void> _startRecording() async {
     try {
+      // Check if API key is configured
+      if (!await ConfigService.hasApiKey()) {
+        setState(() {
+          _status = 'API key not configured. Please set it in Settings.';
+        });
+        _openSettings();
+        return;
+      }
+
       // Check if parecord is available
       if (!await _audioRecorder.isAvailable()) {
         setState(() {
@@ -301,8 +368,8 @@ class _MeetingNotesPageState extends State<MeetingNotesPage> {
       final Directory documentsDir = await getApplicationDocumentsDirectory();
       final String timestamp = DateTime.now().toIso8601String().replaceAll(':', '-');
       
-      // Create MeetingMinutesRecordings folder if it doesn't exist
-      final Directory appDir = Directory('${documentsDir.path}/MeetingMinutesRecordings');
+      // Create MeetingNotesApp folder if it doesn't exist
+      final Directory appDir = Directory('${documentsDir.path}/MeetingNotesApp');
       if (!await appDir.exists()) {
         await appDir.create(recursive: true);
       }
@@ -335,9 +402,18 @@ class _MeetingNotesPageState extends State<MeetingNotesPage> {
         _status = 'Done! Files saved successfully.';
       });
     } catch (e) {
-      setState(() {
-        _status = 'Error processing audio: $e';
-      });
+      String errorMessage = e.toString();
+      if (errorMessage.contains('API key') || errorMessage.contains('not configured')) {
+        setState(() {
+          _status = 'API key not configured. Please set it in Settings.';
+        });
+        // Show dialog to enter API key
+        _openSettings();
+      } else {
+        setState(() {
+          _status = 'Error processing audio: $e';
+        });
+      }
     }
   }
 
@@ -481,7 +557,23 @@ class _MeetingNotesPageState extends State<MeetingNotesPage> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: const Text('Meeting Notes'),
+        title: const Text(
+          'Meeting Notes',
+          style: TextStyle(fontWeight: FontWeight.w500),
+        ),
+        actions: [
+          // Show indicator if API key is not set
+          if (!_hasApiKey)
+            const Padding(
+              padding: EdgeInsets.only(right: 8.0),
+              child: Icon(Icons.warning_amber, color: Colors.orange),
+            ),
+          IconButton(
+            icon: const Icon(Icons.settings),
+            tooltip: 'Settings',
+            onPressed: _openSettings,
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
