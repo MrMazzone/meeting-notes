@@ -5,6 +5,7 @@ import 'package:path_provider/path_provider.dart';
 class ConfigService {
   static const String _configFileName = 'config.json';
   static const String _configKey = 'anthropic_api_key';
+  static const String _themeKey = 'theme_mode';
   
   /// Get the configuration directory path
   static Future<Directory> _getConfigDirectory() async {
@@ -112,5 +113,37 @@ class ConfigService {
   static Future<String> getConfigPath() async {
     final configFile = await _getConfigFile();
     return configFile.path;
+  }
+  
+  /// Get the theme mode preference
+  /// Returns "system", "light", or "dark". Defaults to "system" if not set.
+  static Future<String> getThemeMode() async {
+    try {
+      final config = await _loadConfig();
+      final theme = config[_themeKey] as String?;
+      if (theme != null && ['system', 'light', 'dark'].contains(theme)) {
+        return theme;
+      }
+      return 'system'; // Default to system theme
+    } catch (e) {
+      print('Error getting theme mode: $e');
+      return 'system';
+    }
+  }
+  
+  /// Set the theme mode preference
+  /// Valid values: "system", "light", or "dark"
+  static Future<void> setThemeMode(String mode) async {
+    if (!['system', 'light', 'dark'].contains(mode)) {
+      throw ArgumentError('Theme mode must be "system", "light", or "dark"');
+    }
+    try {
+      final config = await _loadConfig();
+      config[_themeKey] = mode;
+      await _saveConfig(config);
+    } catch (e) {
+      print('Error setting theme mode: $e');
+      rethrow;
+    }
   }
 }

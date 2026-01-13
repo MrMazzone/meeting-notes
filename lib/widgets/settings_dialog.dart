@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import '../services/config_service.dart';
 
 class SettingsDialog extends StatefulWidget {
-  const SettingsDialog({super.key});
+  final VoidCallback? onThemeChanged;
+  
+  const SettingsDialog({super.key, this.onThemeChanged});
 
   @override
   State<SettingsDialog> createState() => _SettingsDialogState();
@@ -13,11 +15,13 @@ class _SettingsDialogState extends State<SettingsDialog> {
   final _apiKeyController = TextEditingController();
   bool _isLoading = false;
   bool _obscureText = true;
+  String _selectedTheme = 'system';
 
   @override
   void initState() {
     super.initState();
     _loadApiKey();
+    _loadTheme();
   }
 
   @override
@@ -34,6 +38,42 @@ class _SettingsDialogState extends State<SettingsDialog> {
       }
     } catch (e) {
       print('Error loading API key: $e');
+    }
+  }
+
+  Future<void> _loadTheme() async {
+    try {
+      final theme = await ConfigService.getThemeMode();
+      if (mounted) {
+        setState(() {
+          _selectedTheme = theme;
+        });
+      }
+    } catch (e) {
+      print('Error loading theme: $e');
+    }
+  }
+
+  Future<void> _saveTheme(String theme) async {
+    try {
+      await ConfigService.setThemeMode(theme);
+      setState(() {
+        _selectedTheme = theme;
+      });
+      // Notify parent widget to update theme
+      if (widget.onThemeChanged != null) {
+        widget.onThemeChanged!();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to save theme: $e'),
+            duration: const Duration(seconds: 3),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     }
   }
 
@@ -150,6 +190,47 @@ class _SettingsDialogState extends State<SettingsDialog> {
                 },
                 icon: const Icon(Icons.open_in_new, size: 16),
                 label: const Text('Get API key from Anthropic'),
+              ),
+              const SizedBox(height: 32),
+              const Divider(),
+              const SizedBox(height: 16),
+              const Text(
+                'Theme',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Choose your preferred app theme.',
+                style: TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+              const SizedBox(height: 16),
+              SegmentedButton<String>(
+                segments: const [
+                  ButtonSegment<String>(
+                    value: 'system',
+                    label: Text('System'),
+                    icon: Icon(Icons.brightness_auto, size: 18),
+                  ),
+                  ButtonSegment<String>(
+                    value: 'light',
+                    label: Text('Light'),
+                    icon: Icon(Icons.light_mode, size: 18),
+                  ),
+                  ButtonSegment<String>(
+                    value: 'dark',
+                    label: Text('Dark'),
+                    icon: Icon(Icons.dark_mode, size: 18),
+                  ),
+                ],
+                selected: {_selectedTheme},
+                onSelectionChanged: (Set<String> selection) {
+                  if (selection.isNotEmpty) {
+                    _saveTheme(selection.first);
+                  }
+                },
               ),
             ],
           ),

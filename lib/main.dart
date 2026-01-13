@@ -14,24 +14,72 @@ Future<void> main() async {
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
   @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  ThemeMode _themeMode = ThemeMode.system;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTheme();
+  }
+
+  Future<void> _loadTheme() async {
+    final themeModeString = await ConfigService.getThemeMode();
+    setState(() {
+      switch (themeModeString) {
+        case 'light':
+          _themeMode = ThemeMode.light;
+          break;
+        case 'dark':
+          _themeMode = ThemeMode.dark;
+          break;
+        case 'system':
+        default:
+          _themeMode = ThemeMode.system;
+          break;
+      }
+    });
+  }
+
+  void _updateTheme() {
+    _loadTheme();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final colorScheme = ColorScheme.fromSeed(seedColor: const Color(0xFF5A7BA8));
     return MaterialApp(
       title: 'Meeting Notes',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF5A7BA8)),
+        colorScheme: colorScheme,
         useMaterial3: true,
       ),
-      home: const MeetingNotesPage(),
+      darkTheme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF5A7BA8),
+          brightness: Brightness.dark,
+        ),
+        useMaterial3: true,
+      ),
+      themeMode: _themeMode,
+      home: MeetingNotesPage(
+        onThemeChanged: _updateTheme,
+      ),
     );
   }
 }
 
 class MeetingNotesPage extends StatefulWidget {
-  const MeetingNotesPage({super.key});
+  final VoidCallback? onThemeChanged;
+  
+  const MeetingNotesPage({super.key, this.onThemeChanged});
 
   @override
   State<MeetingNotesPage> createState() => _MeetingNotesPageState();
@@ -111,7 +159,9 @@ class _MeetingNotesPageState extends State<MeetingNotesPage> {
   Future<void> _openSettings() async {
     final result = await showDialog<bool>(
       context: context,
-      builder: (context) => const SettingsDialog(),
+      builder: (context) => SettingsDialog(
+        onThemeChanged: widget.onThemeChanged,
+      ),
     );
     
     if (result == true) {

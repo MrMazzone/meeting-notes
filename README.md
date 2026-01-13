@@ -157,6 +157,24 @@ When using faster-whisper, the app records audio in 5-second chunks and transcri
 - Provides near-real-time transcription feedback
 - Final transcript combines all chunks seamlessly
 
+### Theme Settings
+
+The app supports theme customization to match your preferences:
+
+- **Default**: Follows your system theme (light or dark mode)
+- **Light Mode**: Forces light theme regardless of system setting
+- **Dark Mode**: Forces dark theme regardless of system setting
+
+**How to Change Theme:**
+1. Open the Settings dialog (gear icon in the app bar)
+2. Use the Theme selector to choose System, Light, or Dark
+3. Changes apply immediately - no app restart required
+
+**Theme Storage:**
+- Theme preference is stored in `~/.config/meeting-notes/config.json`
+- The preference persists across app restarts
+- Defaults to "system" if not explicitly set
+
 ## Troubleshooting
 
 ### Microphone Permission Issues
